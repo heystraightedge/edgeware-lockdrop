@@ -129,7 +129,10 @@ const calculateEffectiveLocks = async (lockdropContracts) => {
 const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=null) => {
   let totalETHSignaled = toBN(0);
   let totalEffectiveETHSignaled = toBN(0);
+  let totalETHDropped = toBN(0);
+  let totalEffectiveETHDropped = toBN(0);
   let signals = {};
+  let droppedsignals = {};
   let seenContracts = {};
   let signalEvents = [];
   for (index in lockdropContracts) {
@@ -141,7 +144,8 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=nu
     signalEvents = [ ...signalEvents, ...events ];
   }
 
-  const promises = signalEvents.map(async (event) => {
+  // promises to get balances of signalled addresses
+  const balancePromises = signalEvents.map(async (event) => {\
     const data = event.returnValues;
     // Get balance at block that lockdrop ends
     let balance;
@@ -155,8 +159,22 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=nu
       return 0;
     }
   });
+
+  // promises to get txs of signal events
+  const txPromises = signalEvents.map(async (event) => {
+    const data = event.returnValues;
+    // check to make sure transaction came from 
+    try{
+      return await web3.eth.getTransactionFromBlock(event.blockNumber, event.transactionIndex)
+    } catch(e) {
+      return 0;
+    }
+  });
+
+
   // Resolve promises to ensure all inner async functions have finished
-  let balances = await Promise.all(promises);
+  let balances = await Promise.all(balancePromises);
+  let txs = await Promise.all(txPromises);
 
   signalEvents.forEach((event, index) => {
     const data = event.returnValues;
@@ -167,33 +185,49 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=nu
       seenContracts[data.contractAddr] = true;
       // Get value for each signal event and add it to the collection
       let value = getEffectiveValue(balances[index], 'signaling');
-      // Add value to total signaled ETH
-      totalETHSignaled = totalETHSignaled.add(toBN(balances[index]));
-      totalEffectiveETHSignaled = totalEffectiveETHSignaled.add(value);
       // Iterate over signals, partition reward into delayed and immediate amounts
-      if (data.edgewareAddr in signals) {
-        signals[data.edgewareAddr] = {
-          signalAmt: toBN(balances[index]).add(toBN(signals[data.edgewareAddr].signalAmt)).toString(),
-          delayedEffectiveValue: toBN(signals[data.edgewareAddr]
-                                  .delayedEffectiveValue)
-                                  .add(value.mul(toBN(75)).div(toBN(100)))
-                                  .toString(),
-          immediateEffectiveValue: toBN(signals[data.edgewareAddr]
-                                    .immediateEffectiveValue)
-                                    .add(value.mul(toBN(25)).div(toBN(100)))
-                                    .toString(),
-        };
+      if (txs[index].from == data.contractAddr) {
+        // only EOA signals
+        if (data.edgewareAddr in signals) {
+          signals[data.edgewareAddr] = {
+            signalAmt: toBN(balances[index]).add(toBN(signals[data.edgewareAddr].signalAmt)).toString(),
+            immediateEffectiveValue: toBN(signals[data.edgewareAddr]
+                                      .immediateEffectiveValue)
+                                      .add(value)
+                                      .toString(),
+          };
+        } else {
+          signals[data.edgewareAddr] = {
+            signalAmt: toBN(balances[index]).toString(),
+            immediateEffectiveValue: value.toString(),
+          };
+        }
+        // Add value to total signaled ETH
+        totalETHSignaled = totalETHSignaled.add(toBN(balances[index]));
+        totalEffectiveETHSignaled = totalEffectiveETHSignaled.add(value);
       } else {
-        signals[data.edgewareAddr] = {
-          signalAmt: toBN(balances[index]).toString(),
-          delayedEffectiveValue: value.mul(toBN(75)).div(toBN(100)).toString(),
-          immediateEffectiveValue: value.mul(toBN(25)).div(toBN(100)).toString(),
-        };
+        // count up dropped signals
+        if (data.edgewareAddr in signals) {
+          droppedsignals[data.edgewareAddr] = {
+            signalAmt: toBN(balances[index]).add(toBN(signals[data.edgewareAddr].signalAmt)).toString(),
+            immediateEffectiveValue: toBN(signals[data.edgewareAddr]
+                                      .immediateEffectiveValue)
+                                      .add(value)
+                                      .toString(),
+          };
+        } else {
+          droppedsignals[data.edgewareAddr] = {
+            signalAmt: toBN(balances[index]).toString(),
+            immediateEffectiveValue: value.toString(),
+          };
+        }
+        totalETHDropped = totalETHDropped.add(toBN(balances[index]));
+        totalEffectiveETHDropped = totalEffectiveETHDropped.add(value);
       }
     }
   });
   // Return signals and total ETH signaled
-  return { signals, totalETHSignaled, totalEffectiveETHSignaled }
+  return { signals, totalETHSignaled, totalEffectiveETHSignaled, droppedsignals, totalETHDropped, totalEffectiveETHDropped}
 }
 
 const getLockStorage = async (web3, lockAddress) => {
