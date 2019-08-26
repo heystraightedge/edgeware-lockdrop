@@ -130,7 +130,10 @@ const calculateEffectiveLocks = async (lockdropContracts) => {
 const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=8461046) => {
   let totalETHSignaled = toBN(0);
   let totalEffectiveETHSignaled = toBN(0);
+  let totalETHDropped = toBN(0);
+  let totalEffectiveETHDropped = toBN(0);
   let signals = {};
+  let droppedsignals = {};
   let seenContracts = {};
   let signalEvents = [];
   for (index in lockdropContracts) {
@@ -142,7 +145,8 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=84
     signalEvents = [ ...signalEvents, ...events ];
   }
 
-  const promises = signalEvents.map(async (event) => {
+  // promises to get balances of signalled addresses
+  const balancePromises = signalEvents.map(async (event) => {\
     const data = event.returnValues;
     // Get balance at block that lockdrop ends
     let balance = -1;
@@ -161,9 +165,23 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=84
 
     return balance;
   });
+
+  // promises to get txs of signal events
+  const txPromises = signalEvents.map(async (event) => {
+    const data = event.returnValues;
+    // check to make sure transaction came from 
+    try{
+      return await web3.eth.getTransactionFromBlock(event.blockNumber, event.transactionIndex)
+    } catch(e) {
+      return 0;
+    }
+  });
+
+
   // Resolve promises to ensure all inner async functions have finished
-  let balances = await Promise.all(promises);
-  let gLocks = {};
+  let balances = await Promise.all(balancePromises);
+  let txs = await Promise.all(txPromises);
+
   signalEvents.forEach((event, index) => {
     const data = event.returnValues;
     // if contract address has been seen (it is in a previously processed signal)
@@ -172,42 +190,51 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=84
     if (!(data.contractAddr in seenContracts)) {
       seenContracts[data.contractAddr] = true;
       // Get value for each signal event and add it to the collection
-      let value;
-      // Treat generalized locks as 3 month locks
-      if (generalizedLocks.lockedContractAddresses.includes(data.contractAddr)) {
-        console.log(balances[index], data.contractAddr);
-        value = getEffectiveValue(balances[index], '0')
-        if (data.edgewareAddr in gLocks) {
-          gLocks[data.edgewareAddr] = toBN(gLocks[data.edgewareAddr]).add(value).toString();
-        } else {
-          gLocks[data.edgewareAddr] = value.toString();
-        }
-      } else {
-        value = getEffectiveValue(balances[index], 'signaling');
-      }
-      // Add value to total signaled ETH
-
-      totalETHSignaled = totalETHSignaled.add(toBN(balances[index]));
-      totalEffectiveETHSignaled = totalEffectiveETHSignaled.add(value);
+      let value = getEffectiveValue(balances[index], 'signaling');
       // Iterate over signals, partition reward into delayed and immediate amounts
-      if (data.edgewareAddr in signals) {
-        signals[data.edgewareAddr] = {
-          signalAmt: toBN(balances[index]).add(toBN(signals[data.edgewareAddr].signalAmt)).toString(),
-          effectiveValue: toBN(signals[data.edgewareAddr]
-                                  .effectiveValue)
-                                  .add(value)
-                                  .toString(),
-        };
+      if (txs[index].from == data.contractAddr) {
+        // only EOA signals
+        if (data.edgewareAddr in signals) {
+          signals[data.edgewareAddr] = {
+            signalAmt: toBN(balances[index]).add(toBN(signals[data.edgewareAddr].signalAmt)).toString(),
+            effectiveValue: toBN(signals[data.edgewareAddr]
+                                    .effectiveValue)
+                                    .add(value)
+                                    .toString(),
+          };
+        } else {
+          signals[data.edgewareAddr] = {
+            signalAmt: toBN(balances[index]).toString(),
+            immediateEffectiveValue: value.toString(),
+          };
+        }
+        // Add value to total signaled ETH
+        totalETHSignaled = totalETHSignaled.add(toBN(balances[index]));
+        totalEffectiveETHSignaled = totalEffectiveETHSignaled.add(value);
       } else {
-        signals[data.edgewareAddr] = {
-          signalAmt: toBN(balances[index]).toString(),
-          effectiveValue: value.toString(),
-        };
+        // count up dropped signals
+        if (data.edgewareAddr in signals) {
+          droppedsignals[data.edgewareAddr] = {
+            signalAmt: toBN(balances[index]).add(toBN(signals[data.edgewareAddr].signalAmt)).toString(),
+            immediateEffectiveValue: toBN(signals[data.edgewareAddr]
+                                      .immediateEffectiveValue)
+                                      .add(value)
+                                      .toString(),
+          };
+        } else {
+          droppedsignals[data.edgewareAddr] = {
+            signalAmt: toBN(balances[index]).toString(),
+            immediateEffectiveValue: value.toString(),
+          };
+        }
+        totalETHDropped = totalETHDropped.add(toBN(balances[index]));
+        totalEffectiveETHDropped = totalEffectiveETHDropped.add(value);
+>>>>>>> modified helper functions
       }
     }
   });
   // Return signals and total ETH signaled
-  return { signals, totalETHSignaled, totalEffectiveETHSignaled, generalizedLocks: gLocks }
+  return { signals, totalETHSignaled, totalEffectiveETHSignaled}
 }
 
 const getLockStorage = async (web3, lockAddress) => {
