@@ -68,7 +68,7 @@ const calculateEffectiveLocks = async (lockdropContracts) => {
 
   let lockEvents = []
   for (index in lockdropContracts) {
-    let events = await lockdropContracts[index].getPastEvents('Locked', {
+    let events = await lockdropContracts[index].getPastEvents('Locked', { // let events = await lockdropContracts[index].getPastEvents('Locked', {
       fromBlock: 0,
       toBlock: 'latest',
     });
@@ -124,6 +124,9 @@ const calculateEffectiveLocks = async (lockdropContracts) => {
     }
   });
   // Return validating locks, locks, and total ETH locked
+  console.log(`Total ETH Locked: ${totalETHLocked.toString()}`);
+  console.log(`Total Effecitve ETH Locked: ${totalEffectiveETHLocked.toString()}`);
+
   return { validatingLocks, locks, totalETHLocked, totalEffectiveETHLocked };
 };
 
@@ -146,7 +149,7 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=84
   }
 
   // promises to get balances of signalled addresses
-  const balancePromises = signalEvents.map(async (event) => {\
+  const balancePromises = signalEvents.map(async (event) => {
     const data = event.returnValues;
     // Get balance at block that lockdrop ends
     let balance = -1;
@@ -206,6 +209,7 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=84
           signals[data.edgewareAddr] = {
             signalAmt: toBN(balances[index]).toString(),
             immediateEffectiveValue: value.toString(),
+            delayedEffectiveValue: toBN(0).toString(),
           };
         }
         // Add value to total signaled ETH
@@ -220,16 +224,17 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=84
                                       .immediateEffectiveValue)
                                       .add(value)
                                       .toString(),
+            delayedEffectiveValue: toBN(0).toString(),
           };
         } else {
           droppedsignals[data.edgewareAddr] = {
             signalAmt: toBN(balances[index]).toString(),
             immediateEffectiveValue: value.toString(),
+            delayedEffectiveValue: toBN(0).toString(),
           };
         }
         totalETHDropped = totalETHDropped.add(toBN(balances[index]));
         totalEffectiveETHDropped = totalEffectiveETHDropped.add(value);
->>>>>>> modified helper functions
       }
     }
   });
