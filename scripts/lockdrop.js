@@ -55,7 +55,7 @@ async function getLockdropAllocation(lockdropContractAddresses, remoteUrl=LOCALH
   });
   const { locks, validatingLocks, totalETHLocked, totalEffectiveETHLocked } = await ldHelpers.calculateEffectiveLocks(contracts);
   fs.writeFileSync('artefacts/lockData.json', JSON.stringify({ locks, validatingLocks, totalETHLocked, totalEffectiveETHLocked }, null, 4))
-  const { signals, totalETHSignaled, totalEffectiveETHSignaled } = await ldHelpers.calculateEffectiveSignals(web3, contracts);
+  const { signals, totalETHSignaled, totalEffectiveETHSignaled, droppedsignals, totalETHDropped, totalEffectiveETHDropped } = await ldHelpers.calculateEffectiveSignals(web3, contracts);
   fs.writeFileSync('artefacts/signalData.json', JSON.stringify({ signals, totalETHSignaled, totalEffectiveETHSignaled }, null, 4));
   const totalEffectiveETH = totalEffectiveETHLocked.add(totalEffectiveETHSignaled);
   let json = await ldHelpers.getEdgewareBalanceObjects(locks, signals, totalAllocation, totalEffectiveETH);

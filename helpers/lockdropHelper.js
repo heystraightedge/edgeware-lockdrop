@@ -67,7 +67,7 @@ const calculateEffectiveLocks = async (lockdropContracts) => {
 
   let lockEvents = []
   for (index in lockdropContracts) {
-    let events = await lockdropContracts[index].getPastEvents('Locked', {
+    let events = await lockdropContracts[index].getPastEvents('Locked', { // let events = await lockdropContracts[index].getPastEvents('Locked', {
       fromBlock: 0,
       toBlock: 'latest',
     });
@@ -123,6 +123,9 @@ const calculateEffectiveLocks = async (lockdropContracts) => {
     }
   });
   // Return validating locks, locks, and total ETH locked
+  console.log(`Total ETH Locked: ${totalETHLocked.toString()}`);
+  console.log(`Total Effecitve ETH Locked: ${totalEffectiveETHLocked.toString()}`);
+
   return { validatingLocks, locks, totalETHLocked, totalEffectiveETHLocked };
 };
 
@@ -145,7 +148,7 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=nu
   }
 
   // promises to get balances of signalled addresses
-  const balancePromises = signalEvents.map(async (event) => {\
+  const balancePromises = signalEvents.map(async (event) => {
     const data = event.returnValues;
     // Get balance at block that lockdrop ends
     let balance;
@@ -195,11 +198,13 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=nu
                                       .immediateEffectiveValue)
                                       .add(value)
                                       .toString(),
+            delayedEffectiveValue: toBN(0).toString(),
           };
         } else {
           signals[data.edgewareAddr] = {
             signalAmt: toBN(balances[index]).toString(),
             immediateEffectiveValue: value.toString(),
+            delayedEffectiveValue: toBN(0).toString(),
           };
         }
         // Add value to total signaled ETH
@@ -214,11 +219,13 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=nu
                                       .immediateEffectiveValue)
                                       .add(value)
                                       .toString(),
+            delayedEffectiveValue: toBN(0).toString(),
           };
         } else {
           droppedsignals[data.edgewareAddr] = {
             signalAmt: toBN(balances[index]).toString(),
             immediateEffectiveValue: value.toString(),
+            delayedEffectiveValue: toBN(0).toString(),
           };
         }
         totalETHDropped = totalETHDropped.add(toBN(balances[index]));
@@ -227,6 +234,12 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=nu
     }
   });
   // Return signals and total ETH signaled
+  console.log(`Total ETH Signalled: ${totalETHSignaled.toString()}`);
+  console.log(`Total Effecitve ETH Signalled: ${totalEffectiveETHSignaled.toString()}`);
+
+  console.log(`Total ETH Dropped: ${totalETHDropped.toString()}`);
+  console.log(`Total Effecitve ETH Dropped: ${totalEffectiveETHDropped.toString()}`);
+
   return { signals, totalETHSignaled, totalEffectiveETHSignaled, droppedsignals, totalETHDropped, totalEffectiveETHDropped}
 }
 
