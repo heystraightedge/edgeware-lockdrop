@@ -180,6 +180,20 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=84
     }
   });
 
+<<<<<<< HEAD
+=======
+  // promises to get txs of signal events
+  const txPromises = signalEvents.map(async (event) => {
+    const data = event.returnValues;
+    // check to make sure transaction came from 
+    try{
+      return await web3.eth.getTransactionFromBlock(event.blockNumber, event.transactionIndex)
+    } catch(e) {
+      return 0;
+    }
+  });
+
+>>>>>>> 044836ebcf563c7f3fa881a9e0ed312a623ba059
 
   // Resolve promises to ensure all inner async functions have finished
   let balances = await Promise.all(balancePromises);
@@ -200,10 +214,18 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=84
         if (data.edgewareAddr in signals) {
           signals[data.edgewareAddr] = {
             signalAmt: toBN(balances[index]).add(toBN(signals[data.edgewareAddr].signalAmt)).toString(),
+<<<<<<< HEAD
             effectiveValue: toBN(signals[data.edgewareAddr]
                                     .effectiveValue)
                                     .add(value)
                                     .toString(),
+=======
+            immediateEffectiveValue: toBN(signals[data.edgewareAddr]
+                                      .immediateEffectiveValue)
+                                      .add(value)
+                                      .toString(),
+            delayedEffectiveValue: toBN(0).toString(),
+>>>>>>> 044836ebcf563c7f3fa881a9e0ed312a623ba059
           };
         } else {
           signals[data.edgewareAddr] = {
@@ -240,7 +262,21 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=84
     }
   });
   // Return signals and total ETH signaled
+<<<<<<< HEAD
   return { signals, totalETHSignaled, totalEffectiveETHSignaled}
+=======
+  console.log(`Total ETH Signalled: ${totalETHSignaled.toString()}`);
+  console.log(`Total Effecitve ETH Signalled: ${totalEffectiveETHSignaled.toString()}`);
+
+  console.log(`Total ETH Dropped: ${totalETHDropped.toString()}`);
+  console.log(`Total Effecitve ETH Dropped: ${totalEffectiveETHDropped.toString()}`);
+
+
+
+  // console.log(droppedsignals)
+
+  return { signals, totalETHSignaled, totalEffectiveETHSignaled, droppedsignals, totalETHDropped, totalEffectiveETHDropped}
+>>>>>>> 044836ebcf563c7f3fa881a9e0ed312a623ba059
 }
 
 const getLockStorage = async (web3, lockAddress) => {

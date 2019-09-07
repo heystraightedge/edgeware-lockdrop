@@ -53,6 +53,7 @@ async function getLockdropAllocation(lockdropContractAddresses, remoteUrl=LOCALH
   const contracts = lockdropContractAddresses.map(addr => {
     return new web3.eth.Contract(LOCKDROP_JSON.abi, addr)
   });
+<<<<<<< HEAD
   // get lock data
   const {
     locks,
@@ -72,6 +73,12 @@ async function getLockdropAllocation(lockdropContractAddresses, remoteUrl=LOCALH
   // write signal data to file
   fs.writeFileSync('artifacts/signalData.json', JSON.stringify({ signals, totalETHSignaled, totalEffectiveETHSignaled }, null, 4));
   // calculate total effective ETH for allocation computation
+=======
+  const { locks, validatingLocks, totalETHLocked, totalEffectiveETHLocked } = await ldHelpers.calculateEffectiveLocks(contracts);
+  fs.writeFileSync('artefacts/lockData.json', JSON.stringify({ locks, validatingLocks, totalETHLocked, totalEffectiveETHLocked }, null, 4))
+  const { signals, totalETHSignaled, totalEffectiveETHSignaled, droppedsignals, totalETHDropped, totalEffectiveETHDropped } = await ldHelpers.calculateEffectiveSignals(web3, contracts);
+  fs.writeFileSync('artefacts/signalData.json', JSON.stringify({ signals, totalETHSignaled, totalEffectiveETHSignaled }, null, 4));
+>>>>>>> 044836ebcf563c7f3fa881a9e0ed312a623ba059
   const totalEffectiveETH = totalEffectiveETHLocked.add(totalEffectiveETHSignaled);
   console.log(totalEffectiveETH.toString(), totalETHLocked.toString(), totalETHSignaled.toString());
   // create JSON file for allocation
