@@ -278,7 +278,7 @@ const selectEdgewareValidators = (validatingLocks, totalAllocation, totalEffecti
     });
 };
 
-const getEdgewareBalanceObjects = (locks, signals, generalizedLocks, totalAllocation, totalEffectiveETH, existentialBalance=100000000000000) => {
+const getEdgewareBalanceObjects = (locks, signals, totalAllocation, totalEffectiveETH, existentialBalance=100000000000000) => {
   let balances = [];
   let vesting = [];
   let existBalAllocation = mulByAllocationFraction(toBN(existentialBalance), totalAllocation, totalEffectiveETH).toString()
@@ -333,42 +333,12 @@ const getEdgewareBalanceObjects = (locks, signals, generalizedLocks, totalAlloca
       }
       const encoded = keyring.encodeAddress(keys[0]);
 
-      if (keys[0] in generalizedLocks) {
-        const gValue = generalizedLocks[keys[0]];
-        const leftoverValue = toBN(signals[key].effectiveValue).sub(toBN(gValue));
-        // add 25% of non-generalised signal value to the liquid amount for the vesting collection
-        const vestingValue = toBN(gValue).add(leftoverValue.mul(toBN(25)).div(toBN(100)))
-        // create new balance record for the signaler
-        balances.push([
-          keys[0].slice(2),
-          mulByAllocationFraction(toBN(signals[key].effectiveValue), totalAllocation, totalEffectiveETH).toString(),
-        ]);
-        if (leftoverValue.gt(toBN(0))) {
-          // create vesting record
-          vesting.push([
-            keys[0].slice(2),
-            5256000,
-            1,
-            mulByAllocationFraction(vestingValue, totalAllocation, totalEffectiveETH).toString(),
-          ]);
-        }
-      } else {
-        // the liquid amount of the vesting is 25% of signaled value
-        const vestingValue = toBN(signals[key].effectiveValue).mul(toBN(25)).div(toBN(100));
-        // create new balance record for the signaler
-        balances.push([
-          keys[0].slice(2),
-          mulByAllocationFraction(toBN(signals[key].effectiveValue), totalAllocation, totalEffectiveETH).toString(),
-        ]);
+      // create new balance record for the signaler
+      balances.push([
+        keys[0].slice(2),
+        mulByAllocationFraction(toBN(signals[key].effectiveValue), totalAllocation, totalEffectiveETH).toString(),
+      ]);
 
-        // create vesting record
-        vesting.push([
-          keys[0].slice(2),
-          5256000,
-          1,
-          mulByAllocationFraction(vestingValue, totalAllocation, totalEffectiveETH).toString(),
-        ]);
-      }
     } catch(e) {
       console.log(e);
       console.log(`Error on signals: ${key}`);
