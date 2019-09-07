@@ -233,6 +233,7 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=84
             delayedEffectiveValue: toBN(0).toString(),
           };
         }
+        console.log(`${data.contractAddr} - ${toBN(balances[index]).toString()}`)
         totalETHDropped = totalETHDropped.add(toBN(balances[index]));
         totalEffectiveETHDropped = totalEffectiveETHDropped.add(value);
       }
