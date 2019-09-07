@@ -129,7 +129,7 @@ const calculateEffectiveLocks = async (lockdropContracts) => {
   return { validatingLocks, locks, totalETHLocked, totalEffectiveETHLocked };
 };
 
-const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=null) => {
+const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=8461046) => {
   let totalETHSignaled = toBN(0);
   let totalEffectiveETHSignaled = toBN(0);
   let totalETHDropped = toBN(0);
@@ -228,6 +228,7 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=nu
             delayedEffectiveValue: toBN(0).toString(),
           };
         }
+        console.log(`${data.contractAddr} - ${toBN(balances[index]).toString()}`)
         totalETHDropped = totalETHDropped.add(toBN(balances[index]));
         totalEffectiveETHDropped = totalEffectiveETHDropped.add(value);
       }
@@ -239,6 +240,10 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=nu
 
   console.log(`Total ETH Dropped: ${totalETHDropped.toString()}`);
   console.log(`Total Effecitve ETH Dropped: ${totalEffectiveETHDropped.toString()}`);
+
+
+
+  // console.log(droppedsignals)
 
   return { signals, totalETHSignaled, totalEffectiveETHSignaled, droppedsignals, totalETHDropped, totalEffectiveETHDropped}
 }
