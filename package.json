@@ -1,6 +1,6 @@
 {
-  "engines" : {
-    "node" : "11.6.0"
+  "engines": {
+    "node": "11.6.0"
   },
   "dependencies": {
     "@polkadot/keyring": "^1.0.1",
