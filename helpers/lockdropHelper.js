@@ -207,7 +207,7 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=84
         } else {
           signals[data.edgewareAddr] = {
             signalAmt: toBN(balances[index]).toString(),
-            immediateEffectiveValue: value.toString(),
+            effectiveValue: value.toString(),
             delayedEffectiveValue: toBN(0).toString(),
           };
         }
@@ -219,8 +219,8 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=84
         if (data.edgewareAddr in signals) {
           droppedsignals[data.edgewareAddr] = {
             signalAmt: toBN(balances[index]).add(toBN(signals[data.edgewareAddr].signalAmt)).toString(),
-            immediateEffectiveValue: toBN(signals[data.edgewareAddr]
-                                      .immediateEffectiveValue)
+            effectiveValue: toBN(signals[data.edgewareAddr]
+                                      .effectiveValue)
                                       .add(value)
                                       .toString(),
             delayedEffectiveValue: toBN(0).toString(),
@@ -228,7 +228,7 @@ const calculateEffectiveSignals = async (web3, lockdropContracts, blockNumber=84
         } else {
           droppedsignals[data.edgewareAddr] = {
             signalAmt: toBN(balances[index]).toString(),
-            immediateEffectiveValue: value.toString(),
+            effectiveValue: value.toString(),
             delayedEffectiveValue: toBN(0).toString(),
           };
         }
